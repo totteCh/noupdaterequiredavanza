@@ -1,0 +1,65 @@
+name: main
+
+# Controls when the workflow will run
+on:
+  push:
+    branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: self-hosted
+    # container:
+    #   image: nosskirneh/theos-docker:11.4
+
+    steps:
+      # Checks out the repository under $GITHUB_WORKSPACE
+      - uses: actions/checkout@v4
+
+      # - name: Get short commit SHA
+      #   id: get_short_sha
+      #   run: |
+      #     short_sha=$(echo ${{ github.sha }} | cut -c 1-7)
+      #     echo "id=${short_sha}" >> $GITHUB_OUTPUT
+
+      - name: Make package
+        run: make package FINALPACKAGE=1
+
+      - name: Get version
+        id: get_version
+        run: |
+          version=$(grep -e ^Version: control | cut -d: -f2)
+          echo "version=${version}" >> $GITHUB_OUTPUT
+
+      # - name: Rename DEB file
+      #   # Appends short commit SHA
+      #   run: for file in packages/*.deb; do mv "$file" "${file%.deb}-$(echo ${{ github.sha }} | cut -c 1-7).deb"; done
+
+      # - uses: actions/upload-artifact@v4
+      #   if: success()
+      #   with:
+      #     name: noupdaterequiredavanza-${{ steps.get_short_sha.outputs.id }}.deb
+      #     path: ${{ github.workspace }}/packages/*.deb
+      #     if-no-files-found: error
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.get_version.outputs.id }}
+          release_name: Release v${{ steps.get_version.outputs.id }}~${{ github.ref }}
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./packages/*.deb
+          asset_name: noupdaterequiredavanza_${{ steps.get_version.outputs.id }}~${{ steps.get_short_sha.outputs.id }}.deb
+          asset_content_type: application/vnd.debian.binary-package
