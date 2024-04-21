@@ -1,0 +1,59 @@
+name: main
+
+# Controls when the workflow will run
+on:
+  push:
+    branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: self-hosted
+    # container:
+    #   image: nosskirneh/theos-docker:11.4
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Make Package
+        run: make package FINALPACKAGE=1
+
+      - name: Get Version
+        id: get_version
+        run: |
+          version=$(grep -e ^Version: control | cut -d: -f2 | awk '{$1=$1};1')
+          echo "version=${version}" >> $GITHUB_OUTPUT
+
+      - name: Generate File Name
+        id: generate_file_name
+        run: |
+          file_name="${{ github.event.repository.name }}_${{ steps.get_version.outputs.version }}.deb"
+          echo "file_name=${file_name}" >> $GITHUB_OUTPUT
+
+      - name: Rename DEB File
+        run: |
+          for file in packages/*.deb; do
+            mv "$file" "packages/${{ steps.generate_file_name.outputs.file_name }}"
+          done
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          release_name: Release v${{ steps.get_version.outputs.version }}
+
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./packages/${{ steps.generate_file_name.outputs.file_name }}
+          asset_name: ${{ steps.generate_file_name.outputs.file_name }}
+          asset_content_type: application/vnd.debian.binary-package
