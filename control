@@ -1,6 +1,6 @@
 Package: com.henrikssonbrothers.noupdaterequiredavanza
 Name: NoUpdateRequiredAvanza
-Version: 1.0.1
+Version: 1.0.2
 Architecture: iphoneos-arm
 Description: Allow older version of Avanza's app
 Maintainer: Christoffer Wigforss
