@@ -14,8 +14,8 @@
     NSRegularExpression *appRegex = [NSRegularExpression regularExpressionWithPattern:@"(currentVersion=)([^&]*)" options:0 error:nil];
     // Spoof iOS 17.4.
     [iOSRegex replaceMatchesInString:modifiedURL options:0 range:NSMakeRange(0, modifiedURL.length) withTemplate:@"$117.4"];
-    // Spoof v5.21.0.
-    [appRegex replaceMatchesInString:modifiedURL options:0 range:NSMakeRange(0, modifiedURL.length) withTemplate:@"$15.21.0"];
+    // Spoof v5.31.0.
+    [appRegex replaceMatchesInString:modifiedURL options:0 range:NSMakeRange(0, modifiedURL.length) withTemplate:@"$15.31.0"];
 
     [request setURL:[NSURL URLWithString:modifiedURL]];
     return %orig;
